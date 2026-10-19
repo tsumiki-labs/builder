@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ @copyright  Copyright (c) 2026 Tsumiki. labs
+ @license    MIT License
+ @link       https://github.com/tsumiki-labs
+-->
+<project name="yourprojectname" default="build">
+    <if>
+        <not>
+            <available file="${env.TSUMIKI_BUILDER_CORE_PATH}/builder.xml"></available>
+        </not>
+        <then>
+            <fail message="${env.TSUMIKI_BUILDER_CORE_PATH}/builder.xml not found. you can register enviroment `php tsumiki-builder-install-path/src/register.php` "/>
+        </then>
+    </if>
+    <target name="build">
+        <phing phingfile="${env.TSUMIKI_BUILDER_CORE_PATH}/builder.xml" target="build"/>
+    </target>
+    <target name="install">
+        <phing phingfile="${env.TSUMIKI_BUILDER_CORE_PATH}/builder.xml" target="install"/>
+    </target>
+    <target name="build-projects">
+        <property name="builder.projectPath" value="{$project.dir}/projectA,{$project.dir}/projectB" />
+        <phing phingfile="${env.TSUMIKI_BUILDER_CORE_PATH}/builder.xml" target="build"/>
+    </target>
+</project>

@@ -1,0 +1,9 @@
+{
+  "name": "tsumiki-labs/extension-builder",
+  "version": "1.0.0",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.1",
+    "phing/phing": "^3.1"
+  }
+}

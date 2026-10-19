@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ @copyright  Copyright (c) 2026 Tsumiki. labs
+ @license    MIT License
+ @link       https://github.com/tsumiki-labs
+-->
+<project default="build">
+    <target name="initialize" hidden="true">
+        <property name="builder.exculdeFiles" value="${project.basedir}"/>
+        <if>
+            <available file="${env.TSUMIKI_BUILDER_CORE_PATH}" type="dir"/>
+            <then>
+                <property name="builder.corePath" value="${env.TSUMIKI_BUILDER_CORE_PATH}"/>
+            </then>
+            <else>
+                <dirname property="builder.corePath" file="${phing.file}"/>
+            </else>
+        </if>
+        <includepath classpath="${env.TSUMIKI_BUILDER_CORE_PATH}/tasks"/>
+        <taskdef name="manifestparser" classname="ManifestParserTask"/>
+        <if>
+            <available file="${builder.corePath}/build.properties"/>
+            <then>
+                <property file="${builder.corePath}/build.properties" override="true"/>
+            </then>
+        </if>
+        <if>
+            <not>
+                <equals arg1="${builder.corePath}/build.properties" arg2="${project.basedir}/build.properties"/>
+            </not>
+            <then>
+                <if>
+                    <available file="${project.basedir}/build.properties"/>
+                    <then>
+                        <property file="${project.basedir}/build.properties" override="true"/>
+                    </then>
+                </if>
+            </then>
+        </if>
+        <property name="builder.projectPath" value="${project.basedir}"/>
+        <property name="builder.distPath" value="${project.basedir}"/>
+        <property name="builder.baseExcludeFiles" value="${builder.excludeFiles}"/>
+    </target>
+    <target name="build" depends="initialize">
+        <foreach list="${builder.projectPath}" param="builder.currentProjectPath" target="build-project" inheritall="true" />
+    </target>
+    <target name="build-project" hidden="true">
+        <echo message="Building project: ${builder.currentProjectPath}" />
+        <manifestparser path="${builder.currentProjectPath}" extensions="builder.extensions" includefiles="builder.includeFiles"/>
+        <foreach list="${builder.extensions}" param="builder.currentExtensionPath" target="build-extension" inheritall="true"/>
+    </target>
+    <target name="build-extension" hidden="true">
+        <property name="builder.excludeFiles" value="${builder.baseExcludeFiles}" override="true"/>
+        <if>
+            <available file="${builder.currentExtensionPath}/build.properties"/>
+            <then>
+                <property file="${builder.currentExtensionPath}/build.properties" override="true"/>
+            </then>
+        </if>
+        <basename property="projectName" file="${builder.currentExtensionPath}"/>
+        <property name="builder.projectName" value="${projectName}" override="true"/>
+        <property name="builder.zipPath" value="${builder.distPath}/${builder.projectName}.zip" override="true"/>
+        <phplint haltonfailure="true">
+            <fileset dir="${builder.currentExtensionPath}" excludes="${builder.excludeFiles}">
+                <include name="**/*.php"/>
+            </fileset>
+        </phplint>
+        <delete file="${builder.zipPath}" quiet="true"/>
+        <mkdir dir="${builder.distPath}"/>
+        <if>
+            <and>
+                <not>
+                    <equals arg1="${builder.includeFiles}" arg2=""/>
+                </not>
+                <equals arg1="${builder.currentProjectPath}" arg2="${builder.currentExtensionPath}"/>
+            </and>
+            <then>
+                <zip destfile="${builder.zipPath}">
+                    <fileset dir="${builder.currentExtensionPath}" excludes="${builder.currentExcludeFiles}">
+                        <include name="**"/>
+                        <exclude name="build.properties"/>
+                    </fileset>
+                    <fileset dir="${builder.distPath}" includes="${builder.includeFiles}"/>
+                </zip>
+            </then>
+            <else>
+                <zip destfile="${builder.zipPath}">
+                    <fileset dir="${builder.currentExtensionPath}" excludes="${builder.excludeFiles}">
+                        <include name="**"/>
+                        <exclude name="build.properties"/>
+                    </fileset>
+                </zip>
+            </else>
+        </if>
+    </target>
+    <target name="install" depends="initialize">
+        <foreach list="${builder.projectPath}" param="builder.currentProjectPath" target="install-project" inheritall="true" />
+    </target>
+    <target name="install-project" hidden="true">
+        <if>
+            <available file="${builder.joomlaCliPath}"/>
+            <then>
+                <basename property="projectName" file="${builder.currentProjectPath}"/>
+                <property name="builder.projectName" value="${projectName}" override="true"/>
+                <property name="builder.zipPath" value="${builder.distPath}/${builder.projectName}.zip" override="true"/>
+                <manifestparser path="${builder.currentProjectPath}" extensions="builder.extensions" includefiles="builder.includeFiles"/>
+                <foreach list="${builder.extensions}" param="builder.currentExtensionPath" target="build-extension" inheritall="true"/>
+                <echo message="Installing extension: ${builder.zipPath}" />
+                <exec executable="php" passthru="true">
+                    <arg file="${builder.joomlaCliPath}"/>
+                    <arg line="extension:install --path ${builder.zipPath}"/>
+                </exec>
+            </then>
+            <else>
+                <fail message="${builder.joomlaCliPath} not found"/>
+            </else>
+        </if>
+    </target>
+</project>

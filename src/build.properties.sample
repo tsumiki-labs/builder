@@ -1,0 +1,3 @@
+builder.joomlaCliPath=/var/www/html/joomla/cli/joomla.php
+builder.distPath=${project.basedir}/dist
+builder.excludeFiles=.env,build.properties
