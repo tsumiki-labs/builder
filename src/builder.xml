@@ -6,7 +6,8 @@
 -->
 <project default="build">
     <target name="initialize" hidden="true">
-        <property name="builder.exculdeFiles" value="${project.basedir}"/>
+        <property name="builder.exculdeFiles" value=""/>
+        <property name="builder.linstExculdeFiles" value=""/>
         <if>
             <available file="${env.TSUMIKI_BUILDER_CORE_PATH}" type="dir"/>
             <then>
@@ -40,6 +41,7 @@
         <property name="builder.projectPath" value="${project.basedir}"/>
         <property name="builder.distPath" value="${project.basedir}"/>
         <property name="builder.baseExcludeFiles" value="${builder.excludeFiles}"/>
+        <property name="builder.baseLintExcludeFiles" value="${builder.lintExcludeFiles}"/>
     </target>
     <target name="build" depends="initialize">
         <foreach list="${builder.projectPath}" param="builder.currentProjectPath" target="build-project" inheritall="true" />
@@ -50,7 +52,8 @@
         <foreach list="${builder.extensions}" param="builder.currentExtensionPath" target="build-extension" inheritall="true"/>
     </target>
     <target name="build-extension" hidden="true">
-        <property name="builder.excludeFiles" value="${builder.baseExcludeFiles}" override="true"/>
+        <property name="builder.excludeFiles" value="" override="true"/>
+        <property name="builder.lintExcludeFiles" value="" override="true"/>
         <if>
             <available file="${builder.currentExtensionPath}/build.properties"/>
             <then>
@@ -61,7 +64,7 @@
         <property name="builder.projectName" value="${projectName}" override="true"/>
         <property name="builder.zipPath" value="${builder.distPath}/${builder.projectName}.zip" override="true"/>
         <phplint haltonfailure="true">
-            <fileset dir="${builder.currentExtensionPath}" excludes="${builder.excludeFiles}">
+            <fileset dir="${builder.currentExtensionPath}" excludes="${builder.baseLintExcludeFiles},${builder.lintExcludeFiles}">
                 <include name="**/*.php"/>
             </fileset>
         </phplint>
@@ -76,7 +79,7 @@
             </and>
             <then>
                 <zip destfile="${builder.zipPath}">
-                    <fileset dir="${builder.currentExtensionPath}" excludes="${builder.currentExcludeFiles}">
+                    <fileset dir="${builder.currentExtensionPath}" excludes="${builder.baseLintExcludeFiles},${builder.excludeFiles}">
                         <include name="**"/>
                         <exclude name="build.properties"/>
                     </fileset>
@@ -85,7 +88,7 @@
             </then>
             <else>
                 <zip destfile="${builder.zipPath}">
-                    <fileset dir="${builder.currentExtensionPath}" excludes="${builder.excludeFiles}">
+                    <fileset dir="${builder.currentExtensionPath}" excludes="${builder.baseLintExcludeFiles},${builder.excludeFiles}">
                         <include name="**"/>
                         <exclude name="build.properties"/>
                     </fileset>
